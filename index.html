@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>React Todo 앱</title>
+   
+    <!-- React CDN -->
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <link rel="stylesheet" href="style.css">
+
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+      // 컴포넌트
+      function FilterBar({ query, setQuery, filter, setFilter }) {
+        return (
+          <div className="flex flex-col md:flex-row items-center gap-2 mt-2">
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="검색..."
+              className="flex-1 px-3 py-2 border border-pink-300 rounded-lg outline-none focus:ring-2 focus:ring-pink-200"
+            />
+            <div className="flex gap-2 w-full md:w-auto">
+              <button
+                onClick={() => setFilter("all")}
+                className={`px-3 py-2 border rounded-lg transition flex-1 md:flex-none ${
+                  filter === "all" ? "bg-pink-500 text-white" : "bg-white text-gray-900 border-gray-300"
+                }`}
+              >
+                전체
+              </button>
+              <button
+                onClick={() => setFilter("active")}
+                className={`px-3 py-2 hover:bg-pink-100 hover:text-black border rounded-lg transition flex-1 md:flex-none ${
+                  filter === "active" ? "bg-pink-500 text-white" : "bg-white text-gray-900 border-gray-300"
+                }`}
+              >
+                진행중
+              </button>
+              <button
+                onClick={() => setFilter("completed")}
+                className={`px-3 py-2 hover:bg-pink-100 hover:text-black border rounded-lg transition flex-1 md:flex-none ${
+                  filter === "completed" ? "bg-pink-500 text-white" : "bg-white text-gray-900 border-gray-300"
+                }`}
+              >
+                완료
+              </button>
+            </div>
+          </div>
+        );
+      }
+
+      function TodoInput({ text, setText, onAdd }) {
+        return (
+          <div className="flex flex-col md:flex-row items-center gap-2 my-3">
+            <input
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.isComposing || e.keyCode === 229) return;
+                if (e.key === "Enter") onAdd();
+              }}
+              placeholder="새 할 일을 입력하세요..."
+              className="flex-1 px-3 py-2 border border-pink-300 rounded-lg outline-none focus:ring-2 focus:ring-pink-200"
+            />
+            <button
+              onClick={onAdd}
+              className="w-full md:w-auto px-4 py-2 bg-pink-200 hover:bg-pink-400 text-black rounded-lg"
+            >
+              추가
+            </button>
+          </div>
+        );
+      }
+
+      function TodoItem({ todo, onToggle, onDelete }) {
+        return (
+          <li className="flex items-center justify-between py-2">
+            <label className="flex items-center gap-2 flex-1">
+              <input
+                type="checkbox"
+                checked={todo.completed}
+                onChange={() => onToggle(todo.id)}
+                className="accent-pink-500"
+              />
+              <span
+                className={`text-gray-800 ${
+                  todo.completed
+                    ? "line-through text-gray-400 opacity-60"
+                    : "no-underline text-gray-800 opacity-100"
+                }`}
+              >
+                {todo.text}
+              </span>
+            </label>
+            <button
+              onClick={() => onDelete(todo.id)}
+              className="bg-red-500 hover:bg-red-600 text-white text-sm px-3 py-1 rounded-lg ml-2"
+            >
+              삭제
+            </button>
+          </li>
+        );
+      }
+
+      function TodoList({ items, onToggle, onDelete }) {
+        return (
+          <ul className="mt-2 pl-4 divide-y divide-gray-100">
+            {items.length === 0 ? (
+              <li className="text-gray-500">할 일이 없습니다. 먼저 추가해보세요 🎯</li>
+            ) : (
+              items.map((todo) => (
+                <TodoItem
+                  key={todo.id}
+                  todo={todo}
+                  onToggle={onToggle}
+                  onDelete={onDelete}
+                />
+              ))
+            )}
+          </ul>
+        );
+      }
+
+      function TodoStats({ todos }) {
+        const total = todos.length;
+        const completed = todos.filter((t) => t.completed).length;
+        const remaining = total - completed;
+        return (
+          <div className="mt-3 p-3 bg-white border border-gray-200 rounded-lg shadow-sm">
+            <div className="flex gap-4">
+              <div>전체: <b>{total}</b></div>
+              <div>완료: <b>{completed}</b></div>
+              <div>남은 일: <b>{remaining}</b></div>
+            </div>
+          </div>
+        );
+      }
+
+      // 메인 TodoApp 컴포넌트
+      function TodoApp() {
+        // 상태 상자 
+        const [todos, setTodos] = React.useState([]);  // 목록
+        const [text, setText] = React.useState("");    // 입력창 글자
+        const addTodo = () => {
+          const t = text.trim();
+          if (!t) return;
+          const item = { id: Date.now(), text: t, completed: false };
+          setTodos([...todos, item]); // 새 배열로 업데이트
+          setText("");                // 입력창 비우기
+        };
+
+        // 검색어 상태
+        const [query, setQuery] = React.useState("");
+
+        // 필터 상태: 'all' 'active' 'completed'
+        const [filter, setFilter] = React.useState("all");
+
+        // 1: 검색 적용
+        const bySearch = todos.filter(t =>
+          t.text.toLowerCase().includes(query.toLowerCase())
+        );
+
+        // 2: 필터 적용
+        const filtered = bySearch.filter(t => {
+          if (filter === "active") return !t.completed;
+          if (filter === "completed") return t.completed;
+          return true; // 'all'
+        });
+
+        // 페이지가 처음 열릴 때(localStorage에서) 목록 불러오기
+        React.useEffect(() => {
+          try {
+            const raw = localStorage.getItem("react-todos");
+            if (raw) setTodos(JSON.parse(raw));
+          } catch (e) {
+            console.warn("불러오기 실패:", e);
+          }
+        }, []); // 빈 배열: '처음 1번만' 실행
+        
+        // todos가 바뀔 때마다 자동 저장
+        React.useEffect(() => {
+          try {
+            localStorage.setItem("react-todos", JSON.stringify(todos));
+          } catch (e) {
+            console.warn("저장 실패:", e);
+          }
+        }, [todos]); // todos가 바뀔 때마다 실행
+
+        // 완료 토글: 체크하면 completed 값을 반대로 바꿔줌
+        function toggleTodo(id) {
+          setTodos(todos.map(t => 
+            t.id === id ? { ...t, completed: !t.completed } : t
+          ));
+        }
+
+        // 삭제: 해당 id가 아닌 것만 남김
+        function deleteTodo(id) {
+          setTodos(todos.filter(t => t.id !== id));
+        }
+
+        return (
+            <div className="p-4 md:p-8 bg-white rounded-lg max-w-2xl mx-auto" 
+                style={{boxShadow: '0 0px 5px 1px rgba(236, 72, 153, 0.3)'}}>
+            <h1 className="text-2xl md:text-4xl font-bold mb-4 text-center">*Todo List</h1>
+
+            {/* 검색 + 필터 */}
+            <FilterBar query={query} setQuery={setQuery} filter={filter} setFilter={setFilter} />
+
+            {/* 입력창 */}
+            <TodoInput text={text} setText={setText} onAdd={addTodo} />
+            
+            {/* 할 일 목록 */}
+            <TodoList items={filtered} onToggle={toggleTodo} onDelete={deleteTodo} />
+
+            {/* 통계 박스 */}
+            <TodoStats todos={todos} />
+          </div>
+        );
+      }
+
+      const root = ReactDOM.createRoot(document.getElementById("root"));
+      root.render(<TodoApp />);
+    </script>
+</body>
+</html>

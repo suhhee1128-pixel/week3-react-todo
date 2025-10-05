@@ -1,0 +1,19 @@
+@font-face {
+    font-family: '116ParrotBeak';
+    src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_six@1.0/116angmuburi.woff') format('woff');
+    font-weight: normal;
+    font-display: swap;
+}
+
+body {
+    font-family: '116ParrotBeak', sans-serif;
+}
+
+#root,
+#root * {
+    font-family: '116ParrotBeak', sans-serif !important;
+}
+
+#root {
+    margin-top: 120px;
+}
